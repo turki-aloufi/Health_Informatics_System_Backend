@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
+namespace Health_Informatics_System_Backend.Models{
 public enum UserRole { Patient, Doctor, Admin }
 public enum Gender { Male, Female }
 
@@ -39,4 +40,5 @@ public class User
     public virtual PatientProfile PatientProfile { get; set; }
     public virtual DoctorProfile DoctorProfile { get; set; }
     public virtual ICollection<Notification> Notifications { get; set; }
+}
 }

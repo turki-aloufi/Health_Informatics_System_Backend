@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+namespace Health_Informatics_System_Backend.Models{
 public class PatientProfile
 {
     [Key, ForeignKey("User")]
@@ -12,4 +12,5 @@ public class PatientProfile
 
     // Navigation Property
     public virtual User User { get; set; }
+}
 }

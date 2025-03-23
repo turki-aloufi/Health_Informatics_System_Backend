@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+namespace Health_Informatics_System_Backend.Models{
 public class DoctorProfile
 {
     [Key, ForeignKey("User")]
@@ -19,4 +19,5 @@ public class DoctorProfile
     public virtual User User { get; set; }
     public virtual ICollection<DoctorAvailability> Availabilities { get; set; }
     public virtual ICollection<Appointment> Appointments { get; set; }
+}
 }

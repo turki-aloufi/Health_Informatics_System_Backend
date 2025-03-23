@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+namespace Health_Informatics_System_Backend.Models{
 public enum NotificationStatus { Sent, Failed, Pending }
 
 public class Notification
@@ -22,4 +22,5 @@ public class Notification
 
     // Navigation Property
     public virtual User User { get; set; }
+}
 }

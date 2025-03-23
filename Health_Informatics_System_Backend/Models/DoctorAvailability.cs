@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+namespace Health_Informatics_System_Backend.Models{
 public class DoctorAvailability
 {
     [Key]
@@ -23,4 +23,5 @@ public class DoctorAvailability
 
     // Navigation Property
     public virtual DoctorProfile DoctorProfile { get; set; }
+}
 }

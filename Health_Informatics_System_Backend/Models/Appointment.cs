@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
+namespace Health_Informatics_System_Backend.Models{
 public enum AppointmentStatus { Scheduled, Completed, Cancelled }
 
 public class Appointment
@@ -28,4 +29,5 @@ public class Appointment
     // Navigation Properties
     public virtual PatientProfile PatientProfile { get; set; }
     public virtual DoctorProfile DoctorProfile { get; set; }
+}
 }
