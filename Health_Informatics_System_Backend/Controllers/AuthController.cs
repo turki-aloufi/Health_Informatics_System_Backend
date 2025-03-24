@@ -25,18 +25,22 @@ namespace Health_Informatics_System_Backend.Controllers
 
         // POST: api/Auth/login
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto dto)
-        {
-            // In production, hash the provided password and compare hashes.
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email && u.Password == dto.Password);
-            if (user == null)
-            {
-                return Unauthorized("Invalid credentials");
-            }
-
-            var token = GenerateJwtToken(user);
-            return Ok(new { Token = token });
+        public async Task<IActionResult> Login([FromBody] LoginDto dto){
+        // Retrieve the user by email
+         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+         if (user == null) {
+        return Unauthorized("Invalid credentials");
         }
+    
+        // Verify the password using BCrypt
+        if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
+        {
+        return Unauthorized("Invalid credentials");
+        }
+
+        var token = GenerateJwtToken(user);
+        return Ok(new { Token = token });
+}
 
         // POST: api/Auth/register
         [HttpPost("register")]

@@ -34,5 +34,37 @@ namespace Health_Informatics_System_Backend.Controllers
             }
             return Ok(profile);
         }
+
+
+        [Authorize(Roles = "Patient")] // Only patients can access this
+        [HttpPut("update-profile")]
+        public async Task<IActionResult> UpdatePatientProfile([FromBody] UpdatePatientProfileDto updateDto){
+        if (updateDto == null){
+        return BadRequest("Invalid request data.");
+        }
+
+        // Get user ID from JWT token
+        var userIdClaim = User.FindFirst("UserId")?.Value;
+        if (string.IsNullOrEmpty(userIdClaim)){
+        return Unauthorized("User not found.");
+    }
+
+        int userId = int.Parse(userIdClaim);
+
+        var patientProfile = await _context.PatientProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (patientProfile == null){
+        return NotFound("Patient profile not found.");
+    }
+
+        // Update profile fields if new values are provided
+        patientProfile.MedicalHistory = updateDto.MedicalHistory ?? patientProfile.MedicalHistory;
+        patientProfile.InsuranceDetails = updateDto.InsuranceDetails ?? patientProfile.InsuranceDetails;
+        patientProfile.EmergencyContact = updateDto.EmergencyContact ?? patientProfile.EmergencyContact;
+
+        _context.PatientProfiles.Update(patientProfile);
+        await _context.SaveChangesAsync();
+
+        return Ok("Profile updated successfully.");
+}
     }
 }

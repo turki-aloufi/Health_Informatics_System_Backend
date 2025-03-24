@@ -34,14 +34,16 @@ namespace Health_Informatics_System_Backend.Controllers
                 var appointments = await _context.Appointments
                     .Where(a => a.PatientId == userId)
                     .ToListAsync();
-                return Ok(appointments);
+                return Ok(new {msg = "appointments",
+                data = appointments});
             }
             else if (role == "Doctor")
             {
                 var appointments = await _context.Appointments
                     .Where(a => a.DoctorId == userId)
                     .ToListAsync();
-                return Ok(appointments);
+                return Ok(new {msg = "appointments",
+                data = appointments});
             }
             return Forbid();
         }
