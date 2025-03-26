@@ -4,6 +4,7 @@ using Health_Informatics_System_Backend.Data;
 using Health_Informatics_System_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Health_Informatics_System_Backend.DTOs.Health_Informatics_System_Backend.Dtos;
 
 namespace Health_Informatics_System_Backend.Controllers
 {
@@ -47,5 +48,29 @@ namespace Health_Informatics_System_Backend.Controllers
             }
             return Forbid();
         }
+        [HttpPost]
+        public async Task<IActionResult> CreateAppointment([FromBody] AppointmentCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var appointment = new Appointment
+            {
+                PatientId = dto.PatientId,
+                DoctorId = dto.DoctorId,
+                AppointmentDateTime = dto.AppointmentDateTime,
+                Status = dto.Status,
+                Notes = dto.Notes
+            };
+
+            _context.Appointments.Add(appointment);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetMyAppointments), new { id = appointment.AppointmentId }, appointment);
+        }
+
+
+
+
     }
 }
