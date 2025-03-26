@@ -7,6 +7,8 @@ using Health_Informatics_System_Backend.Data;
 using Health_Informatics_System_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
+using Health_Informatics_System_Backend.DTOs;
 
 namespace Health_Informatics_System_Backend.Controllers
 {
@@ -25,25 +27,27 @@ namespace Health_Informatics_System_Backend.Controllers
 
         // POST: api/Auth/login
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto dto){
-        // Retrieve the user by email
-         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-         if (user == null) {
-        return Unauthorized("Invalid credentials");
-        }
-    
-        // Verify the password using BCrypt
-        if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
+        public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
-        return Unauthorized("Invalid credentials");
-        }
+            // Retrieve the user by email
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null)
+            {
+                return Unauthorized("Invalid credentials");
+            }
 
-        var token = GenerateJwtToken(user);
-        return Ok(new { Token = token });
-}
+            // Verify the password using BCrypt
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
+            {
+                return Unauthorized("Invalid credentials");
+            }
+
+            var token = GenerateJwtToken(user);
+            return Ok(new { Token = token });
+        }
 
         // POST: api/Auth/register
-        [HttpPost("register")]
+        [HttpPost("create-patient-profile")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
             // Check if the email is already registered
@@ -75,7 +79,7 @@ namespace Health_Informatics_System_Backend.Controllers
             {
                 UserId = user.Id,
                 MedicalHistory = string.Empty,
-                InsuranceDetails = null, // optional
+                InsuranceDetails = string.Empty, // optional
                 EmergencyContact = string.Empty
             };
 
@@ -109,30 +113,14 @@ namespace Health_Informatics_System_Backend.Controllers
 
         private string HashPassword(string password)
         {
-                if (string.IsNullOrEmpty(password)){
-                     throw new ArgumentException("Password cannot be null or empty.");
-                }
-             return BCrypt.Net.BCrypt.HashPassword(password);
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentException("Password cannot be null or empty.");
+            }
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
     }
 
-    // DTO for login
-    public class LoginDto
-    {
-        public string Email { get; set; }
-        public string Password { get; set; }
-    }
 
-    // DTO for registration
-    public class RegisterDto
-    {
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-        public DateTime DoB { get; set; }
-        public string SSN { get; set; }
-        public Gender Gender { get; set; }
-        public string PhoneNumber { get; set; }
-        public string Address { get; set; }
-    }
+
 }
