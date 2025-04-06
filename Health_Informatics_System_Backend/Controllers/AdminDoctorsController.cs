@@ -192,12 +192,12 @@ namespace Health_Informatics_System_Backend.Controllers
                 });
             }
 
-            // Create new user
+            // Create new user with hashed password
             var user = new User
             {
                 Name = doctorDto.Name,
                 Email = doctorDto.Email,
-                Password = doctorDto.Password, 
+                Password = HashPassword(doctorDto.Password), // Hash the password
                 Role = UserRole.Doctor,
                 DoB = doctorDto.DoB,
                 SSN = doctorDto.SSN,
@@ -276,6 +276,16 @@ namespace Health_Informatics_System_Backend.Controllers
                 msg = "Doctor deleted successfully",
                 data = (object)null
             });
+        }
+
+        // Helper method to hash passwords
+        private string HashPassword(string password)
+        {
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentException("Password cannot be null or empty.");
+            }
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
     }
 }
