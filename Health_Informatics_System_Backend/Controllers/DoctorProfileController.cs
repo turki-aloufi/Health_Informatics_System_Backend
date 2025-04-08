@@ -153,10 +153,5 @@ namespace Health_Informatics_System_Backend.Controllers
                 notesHistory = pastNotes
             });
         }
-
-
-
-
-
     }
 }
