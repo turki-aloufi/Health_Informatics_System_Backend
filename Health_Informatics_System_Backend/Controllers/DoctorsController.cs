@@ -29,6 +29,7 @@ namespace Health_Informatics_System_Backend.Controllers
                 .Include(dp => dp.User) 
                 .Select(dp => new DoctorDto
                 {
+                    DoctorId = dp.UserId,
                     Name = dp.User.Name,        
                     Specialty = dp.Specialty,
                     Clinic = dp.Clinic
