@@ -26,10 +26,10 @@ namespace Health_Informatics_System_Backend.Controllers
         {
             var doctors = await _context.DoctorProfiles
                 .AsNoTracking()
-                .Include(dp => dp.User) // Include the User data to get the name
+                .Include(dp => dp.User) 
                 .Select(dp => new DoctorDto
                 {
-                    Name = dp.User.Name,        // Assuming your User entity has a property "Name"
+                    Name = dp.User.Name,        
                     Specialty = dp.Specialty,
                     Clinic = dp.Clinic
                 })
