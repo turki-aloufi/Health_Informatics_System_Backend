@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Health_Informatics_System_Backend.Data;
-using Health_Informatics_System_Backend.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
+using Health_Informatics_System_Backend.Models;
 
 namespace Health_Informatics_System_Backend.Controllers
 {
