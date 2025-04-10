@@ -43,7 +43,11 @@ namespace Health_Informatics_System_Backend.Data{
             .HasForeignKey(a => a.DoctorId)
             .OnDelete(DeleteBehavior.Restrict);
 
-            
+            modelBuilder.Entity<DoctorAvailability>()
+                .HasOne(da => da.DoctorProfile)
+                .WithMany(dp => dp.Availabilities)
+                .HasForeignKey(da => da.DoctorId);
+
             //Further customizations (if needed)
 
             base.OnModelCreating(modelBuilder);

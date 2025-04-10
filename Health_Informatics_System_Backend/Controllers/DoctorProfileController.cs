@@ -32,7 +32,23 @@ namespace Health_Informatics_System_Backend.Controllers
                 .Where(a => a.DoctorId == doctorId &&
                             a.AppointmentDateTime >= DateTime.Now &&
                             a.Status == AppointmentStatus.Scheduled)
+                .Include(a => a.PatientProfile)
+                .ThenInclude(p => p.User)
                 .OrderBy(a => a.AppointmentDateTime)
+                .Select(a => new
+                {
+                    a.AppointmentId,
+                    a.AppointmentIdPublic,
+                    a.PatientId,
+                    a.DoctorId,
+                    a.AppointmentDateTime,
+                    a.Status,
+                    a.Notes,
+                    PatientName = a.PatientProfile.User.Name,
+                    PatientEmail = a.PatientProfile.User.Email,
+                    PatientPhone = a.PatientProfile.User.PhoneNumber,
+                    PatientGender = a.PatientProfile.User.Gender
+                })
                 .ToListAsync();
 
             return Ok(upcomingAppointments);
@@ -52,7 +68,23 @@ namespace Health_Informatics_System_Backend.Controllers
                 .Where(a => a.DoctorId == doctorId &&
                             a.AppointmentDateTime < DateTime.Now &&
                             a.Status == AppointmentStatus.Completed)
+                .Include(a => a.PatientProfile)
+                .ThenInclude(p => p.User)
                 .OrderByDescending(a => a.AppointmentDateTime)
+                .Select(a => new
+                {
+                    a.AppointmentId,
+                    a.AppointmentIdPublic,
+                    a.PatientId,
+                    a.DoctorId,
+                    a.AppointmentDateTime,
+                    a.Status,
+                    a.Notes,
+                    PatientName = a.PatientProfile.User.Name,
+                    PatientEmail = a.PatientProfile.User.Email,
+                    PatientPhone = a.PatientProfile.User.PhoneNumber,
+                    PatientGender = a.PatientProfile.User.Gender
+                })
                 .ToListAsync();
 
             return Ok(pastAppointments);
@@ -152,5 +184,31 @@ namespace Health_Informatics_System_Backend.Controllers
                 notesHistory = pastNotes
             });
         }
+        [HttpPut("appointments/public/{appointmentPublicId}/status")]
+        public async Task<IActionResult> UpdateAppointmentStatus(string appointmentPublicId, [FromBody] AppointmentStatusUpdateDto dto)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("User ID not found in token.");
+
+            int doctorId = int.Parse(userIdClaim);
+
+            var appointment = await _context.Appointments
+                .FirstOrDefaultAsync(a => a.AppointmentIdPublic == appointmentPublicId && a.DoctorId == doctorId);
+
+            if (appointment == null)
+                return NotFound("Appointment not found or you are not authorized to modify it.");
+
+            appointment.Status = dto.Status;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Status updated successfully.", Status = appointment.Status });
+        }
+
     }
+    public class AppointmentStatusUpdateDto
+    {
+        public AppointmentStatus Status { get; set; }
+    }
+
 }
