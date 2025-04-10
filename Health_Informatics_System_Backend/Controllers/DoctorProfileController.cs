@@ -185,7 +185,28 @@ namespace Health_Informatics_System_Backend.Controllers
                 notesHistory = pastNotes
             });
         }
-        
+        [HttpPut("appointments/public/{appointmentPublicId}/status")]
+        public async Task<IActionResult> UpdateAppointmentStatus(string appointmentPublicId, [FromBody] AppointmentStatusUpdateDto dto)
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("User ID not found in token.");
+
+            int doctorId = int.Parse(userIdClaim);
+
+            var appointment = await _context.Appointments
+                .FirstOrDefaultAsync(a => a.AppointmentIdPublic == appointmentPublicId && a.DoctorId == doctorId);
+
+            if (appointment == null)
+                return NotFound("Appointment not found or you are not authorized to modify it.");
+
+            appointment.Status = dto.Status;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Status updated successfully.", Status = appointment.Status });
+        }
+
+
 
 
 
@@ -194,4 +215,9 @@ namespace Health_Informatics_System_Backend.Controllers
 
 
     }
+    public class AppointmentStatusUpdateDto
+    {
+        public AppointmentStatus Status { get; set; }
+    }
+
 }
