@@ -205,14 +205,6 @@ namespace Health_Informatics_System_Backend.Controllers
             return Ok(new { message = "Status updated successfully.", Status = appointment.Status });
         }
 
-
-
-
-
-
-
-
-
     }
     public class AppointmentStatusUpdateDto
     {

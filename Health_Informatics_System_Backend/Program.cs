@@ -19,12 +19,19 @@ builder.Services.AddScoped<AppointmentService>();
 // Configure CORS
 builder.Services.AddCors(options =>
 {
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+
     options.AddPolicy("AllowAngularClient", policy =>
     {
         policy.WithOrigins("http://localhost:4200")
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -51,6 +58,7 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
     };
 });
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
@@ -67,9 +75,13 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
 
-app.UseCors("AllowAngularClient");
+    app.UseCors("AllowAll");
+}
+else
+{
+    app.UseCors("AllowAngularClient");
+}
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
