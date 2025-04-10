@@ -33,7 +33,23 @@ namespace Health_Informatics_System_Backend.Controllers
                 .Where(a => a.DoctorId == doctorId &&
                             a.AppointmentDateTime >= DateTime.Now &&
                             a.Status == AppointmentStatus.Scheduled)
+                .Include(a => a.PatientProfile)
+                .ThenInclude(p => p.User)
                 .OrderBy(a => a.AppointmentDateTime)
+                .Select(a => new
+                {
+                    a.AppointmentId,
+                    a.AppointmentIdPublic,
+                    a.PatientId,
+                    a.DoctorId,
+                    a.AppointmentDateTime,
+                    a.Status,
+                    a.Notes,
+                    PatientName = a.PatientProfile.User.Name,
+                    PatientEmail = a.PatientProfile.User.Email,
+                    PatientPhone = a.PatientProfile.User.PhoneNumber,
+                    PatientGender = a.PatientProfile.User.Gender
+                })
                 .ToListAsync();
 
             return Ok(upcomingAppointments);
@@ -53,7 +69,23 @@ namespace Health_Informatics_System_Backend.Controllers
                 .Where(a => a.DoctorId == doctorId &&
                             a.AppointmentDateTime < DateTime.Now &&
                             a.Status == AppointmentStatus.Completed)
+                .Include(a => a.PatientProfile)
+                .ThenInclude(p => p.User)
                 .OrderByDescending(a => a.AppointmentDateTime)
+                .Select(a => new
+                {
+                    a.AppointmentId,
+                    a.AppointmentIdPublic,
+                    a.PatientId,
+                    a.DoctorId,
+                    a.AppointmentDateTime,
+                    a.Status,
+                    a.Notes,
+                    PatientName = a.PatientProfile.User.Name,
+                    PatientEmail = a.PatientProfile.User.Email,
+                    PatientPhone = a.PatientProfile.User.PhoneNumber,
+                    PatientGender = a.PatientProfile.User.Gender
+                })
                 .ToListAsync();
 
             return Ok(pastAppointments);
@@ -153,6 +185,9 @@ namespace Health_Informatics_System_Backend.Controllers
                 notesHistory = pastNotes
             });
         }
+        
+
+
 
 
 
