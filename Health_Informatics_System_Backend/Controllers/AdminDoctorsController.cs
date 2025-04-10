@@ -7,6 +7,12 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using Health_Informatics_System_Backend.DTOs;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
+using iText.IO.Font.Constants;
+using iText.Kernel.Font;
 
 namespace Health_Informatics_System_Backend.Controllers
 {
@@ -278,6 +284,105 @@ namespace Health_Informatics_System_Backend.Controllers
             });
         }
 
+        [HttpGet("generate-doctor-pdf/{id}")]
+        public async Task<IActionResult> GenerateDoctorPdf(string id)
+        {
+            var doctor = await _context.DoctorProfiles
+                .Include(d => d.User)
+                .Include(d => d.Availabilities)
+                .Select(d => new
+                {
+                    idPublic = d.User.IdPublic,
+                    name = d.User.Name,
+                    email = d.User.Email,
+                    role = d.User.Role,
+                    doB = d.User.DoB,
+                    ssn = d.User.SSN,
+                    gender = d.User.Gender,
+                    phoneNumber = d.User.PhoneNumber,
+                    address = d.User.Address,
+                    specialty = d.Specialty,
+                    licenseNumber = d.LicenseNumber,
+                    clinic = d.Clinic,
+                    availabilities = d.Availabilities.Select(a => new
+                    {
+                        dayOfWeek = a.DayOfWeek,
+                        startTime = a.StartTime,
+                        endTime = a.EndTime
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync(d => d.idPublic == id);
+
+            if (doctor == null)
+            {
+                return NotFound(new
+                {
+                    msg = "Doctor not found",
+                    data = (object)null
+                });
+            }
+
+            using (var memoryStream = new MemoryStream())
+            {
+                var writer = new PdfWriter(memoryStream);
+                var pdf = new PdfDocument(writer);
+                var document = new Document(pdf);
+
+                // Add title with bold formatting using font
+                document.Add(new Paragraph("Doctor Profile")
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetFontSize(20)
+                    .SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD)));
+
+                // Add doctor information
+                document.Add(new Paragraph($"Name: {doctor.name}"));
+                document.Add(new Paragraph($"Email: {doctor.email}"));
+                document.Add(new Paragraph($"Role: {doctor.role}"));
+                document.Add(new Paragraph($"Date of Birth: {doctor.doB:yyyy-MM-dd}"));
+                document.Add(new Paragraph($"SSN: {doctor.ssn}"));
+                document.Add(new Paragraph($"Gender: {doctor.gender}"));
+                document.Add(new Paragraph($"Phone: {doctor.phoneNumber}"));
+                document.Add(new Paragraph($"Address: {doctor.address}"));
+                document.Add(new Paragraph($"Specialty: {doctor.specialty}"));
+                document.Add(new Paragraph($"License Number: {doctor.licenseNumber}"));
+                document.Add(new Paragraph($"Clinic: {doctor.clinic}"));
+
+                // Add availabilities section with bold formatting using font
+                document.Add(new Paragraph("\nAvailabilities:")
+                    .SetFontSize(14)
+                    .SetFont(PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD)));
+
+                if (doctor.availabilities.Any())
+                {
+                    Table table = new Table(3);
+                    table.AddHeaderCell("Day of Week");
+                    table.AddHeaderCell("Start Time");
+                    table.AddHeaderCell("End Time");
+
+                    foreach (var availability in doctor.availabilities)
+                    {
+                        table.AddCell(availability.dayOfWeek.ToString());
+                        table.AddCell(availability.startTime.ToString(@"hh\:mm"));
+                        table.AddCell(availability.endTime.ToString(@"hh\:mm"));
+                    }
+                    document.Add(table);
+                }
+                else
+                {
+                    document.Add(new Paragraph("No availability scheduled"));
+                }
+
+                // Add generation timestamp
+                document.Add(new Paragraph($"\nGenerated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss}")
+                    .SetFontSize(10)
+                    .SetTextAlignment(TextAlignment.RIGHT));
+
+                document.Close();
+
+                var pdfBytes = memoryStream.ToArray();
+                return File(pdfBytes, "application/pdf", $"DoctorProfile_{doctor.idPublic}.pdf");
+            }
+        }
         // Helper method to hash passwords
         private string HashPassword(string password)
         {
