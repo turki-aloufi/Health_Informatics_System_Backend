@@ -43,7 +43,48 @@ namespace Health_Informatics_System_Backend.Controllers
             }
 
             var token = GenerateJwtToken(user);
-            return Ok(new { Token = token });
+            return Ok(new { Token = token ,User = user});
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "UserId");
+            if (userIdClaim == null)
+            {
+                return Unauthorized("User ID not found in token.");
+            }
+
+            if (!int.TryParse(userIdClaim.Value, out var userId))
+            {
+                return Unauthorized("Invalid user ID.");
+            }
+
+            var user = await _context.Users
+                .Include(u => u.PatientProfile) // Include if needed
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var userDto = new
+            {
+                user.Id,
+                user.Name,
+                user.Email,
+                user.Role,
+                user.DoB,
+                user.SSN,
+                user.Gender,
+                user.PhoneNumber,
+                user.Address
+                // Add more fields if needed
+            };
+
+            return Ok(userDto);
         }
 
         // POST: api/Auth/register
