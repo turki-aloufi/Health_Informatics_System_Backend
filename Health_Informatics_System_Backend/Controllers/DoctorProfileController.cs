@@ -36,34 +36,67 @@ namespace Health_Informatics_System_Backend.Controllers
             int doctorId = int.Parse(userIdClaim);
 
             var upcomingAppointments = await _context.Appointments
-                .Where(a => a.DoctorId == doctorId &&
-                            a.AppointmentDateTime >= DateTime.Now &&
-                            a.Status == AppointmentStatus.Scheduled)
-                .OrderBy(a => a.AppointmentDateTime)
-                .ToListAsync();
+    .Where(a => a.DoctorId == doctorId &&
+                a.AppointmentDateTime >= DateTime.Now &&
+                a.Status == AppointmentStatus.Scheduled)
+    .Include(a => a.PatientProfile)
+    .ThenInclude(p => p.User)
+    .OrderBy(a => a.AppointmentDateTime)
+    .Select(a => new
+    {
+        a.AppointmentId,
+        a.AppointmentIdPublic,
+        a.PatientId,
+        a.DoctorId,
+        a.AppointmentDateTime,
+        a.Status,
+        a.Notes,
+        PatientName = a.PatientProfile.User.Name,
+        PatientEmail = a.PatientProfile.User.Email,
+        PatientPhone = a.PatientProfile.User.PhoneNumber,
+        PatientGender = a.PatientProfile.User.Gender
+    })
+    .ToListAsync();
 
             return Ok(upcomingAppointments);
         }
 
         // GET: api/DoctorProfile/appointments/past
-        [HttpGet("appointments/past")]
-        public async Task<IActionResult> GetPastAppointments()
+       // GET: api/DoctorProfile/appointments/past
+[HttpGet("appointments/past")]
+public async Task<IActionResult> GetPastAppointments()
+{
+    var userIdClaim = User.FindFirst("UserId")?.Value;
+    if (string.IsNullOrEmpty(userIdClaim))
+        return Unauthorized("User ID not found in token.");
+
+    int doctorId = int.Parse(userIdClaim);
+
+    var pastAppointments = await _context.Appointments
+        .Where(a => a.DoctorId == doctorId &&
+                    a.AppointmentDateTime < DateTime.Now &&
+                    a.Status == AppointmentStatus.Completed)
+        .Include(a => a.PatientProfile)
+        .ThenInclude(p => p.User)
+        .OrderByDescending(a => a.AppointmentDateTime)
+        .Select(a => new
         {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized("User ID not found in token.");
+            a.AppointmentId,
+            a.AppointmentIdPublic,
+            a.PatientId,
+            a.DoctorId,
+            a.AppointmentDateTime,
+            a.Status,
+            a.Notes,
+            PatientName = a.PatientProfile.User.Name,
+            PatientEmail = a.PatientProfile.User.Email,
+            PatientPhone = a.PatientProfile.User.PhoneNumber,
+            PatientGender = a.PatientProfile.User.Gender
+        })
+        .ToListAsync();
 
-            int doctorId = int.Parse(userIdClaim);
-
-            var pastAppointments = await _context.Appointments
-                .Where(a => a.DoctorId == doctorId &&
-                            a.AppointmentDateTime < DateTime.Now &&
-                            a.Status == AppointmentStatus.Completed)
-                .OrderByDescending(a => a.AppointmentDateTime)
-                .ToListAsync();
-
-            return Ok(pastAppointments);
-        }
+    return Ok(pastAppointments);
+}
 
         // GET: api/DoctorProfile/me
         //HGETALL HealthInfSys_DoctorProfile_8
