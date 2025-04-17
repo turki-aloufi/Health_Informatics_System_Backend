@@ -66,29 +66,30 @@ namespace Health_Informatics_System_Backend.Controllers
         }
 
         // GET: api/DoctorProfile/me
-[HttpGet("me")]
-public async Task<IActionResult> GetMyDoctorProfile()
-{
-    var userIdClaim = User.FindFirst("UserId")?.Value;
-    if (string.IsNullOrEmpty(userIdClaim))
-        return Unauthorized("User ID not found in token.");
-
-    int userId = int.Parse(userIdClaim);
-
-    // Construct a cache key (no need to worry about prefix here)
-    var cacheKey = $"DoctorProfile_{userId}";
-
-    try
-    {
-        // Try to get from cache
-        string cachedJson = await _cache.GetStringAsync(cacheKey);
-        
-        if (!string.IsNullOrEmpty(cachedJson))
+        //HGETALL HealthInfSys_DoctorProfile_8
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMyDoctorProfile()
         {
-            Console.WriteLine($"Cache hit for {cacheKey}");
-            var cachedProfile = JsonSerializer.Deserialize<DoctorProfileDto>(cachedJson);
-            return Ok(cachedProfile);
-        }
+             var userIdClaim = User.FindFirst("UserId")?.Value;
+             if (string.IsNullOrEmpty(userIdClaim))
+             return Unauthorized("User ID not found in token.");
+
+             int userId = int.Parse(userIdClaim);
+
+             // Construct a cache key (no need to worry about prefix here)
+            var cacheKey = $"DoctorProfile_{userId}";
+
+             try
+                {
+                // Try to get from cache
+                  string cachedJson = await _cache.GetStringAsync(cacheKey);
+        
+                if (!string.IsNullOrEmpty(cachedJson))
+                 {
+                 Console.WriteLine($"Cache hit for {cacheKey}");
+                 var cachedProfile = JsonSerializer.Deserialize<DoctorProfileDto>(cachedJson);
+                    return Ok(cachedProfile);
+                }
         
         Console.WriteLine($"Cache miss for {cacheKey}, fetching from database");
         
