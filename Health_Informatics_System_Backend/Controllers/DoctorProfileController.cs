@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Health_Informatics_System_Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Health_Informatics_System_Backend.Models;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
+using System.Text;
 
 namespace Health_Informatics_System_Backend.Controllers
 {
@@ -12,10 +15,14 @@ namespace Health_Informatics_System_Backend.Controllers
     public class DoctorProfileController : ControllerBase
     {
         private readonly AppDbContext _context;
-
-        public DoctorProfileController(AppDbContext context)
+        private readonly IDistributedCache _cache;
+        private readonly DistributedCacheEntryOptions _cacheOptions =
+            new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(30));
+        public DoctorProfileController(AppDbContext context, IDistributedCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         // GET: api/DoctorProfile/appointments/upcoming
@@ -59,35 +66,86 @@ namespace Health_Informatics_System_Backend.Controllers
         }
 
         // GET: api/DoctorProfile/me
-        [HttpGet("me")]
-        public async Task<IActionResult> GetMyDoctorProfile()
+[HttpGet("me")]
+public async Task<IActionResult> GetMyDoctorProfile()
+{
+    var userIdClaim = User.FindFirst("UserId")?.Value;
+    if (string.IsNullOrEmpty(userIdClaim))
+        return Unauthorized("User ID not found in token.");
+
+    int userId = int.Parse(userIdClaim);
+
+    // Construct a cache key (no need to worry about prefix here)
+    var cacheKey = $"DoctorProfile_{userId}";
+
+    try
+    {
+        // Try to get from cache
+        string cachedJson = await _cache.GetStringAsync(cacheKey);
+        
+        if (!string.IsNullOrEmpty(cachedJson))
         {
-            var userIdClaim = User.FindFirst("UserId")?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized("User ID not found in token.");
-
-            int userId = int.Parse(userIdClaim);
-
-            var doctorProfile = await _context.DoctorProfiles
-                .Include(d => d.User) // Optional: get name/email/etc.
-                .FirstOrDefaultAsync(d => d.UserId == userId);
-
-            if (doctorProfile == null)
-                return NotFound("Doctor profile not found.");
-
-            // Optional: create a DTO to return a clean result
-            return Ok(new
-            {
-                doctorProfile.UserId,
-                doctorProfile.User.IdPublic,
-                Name = doctorProfile.User.Name,
-                Email = doctorProfile.User.Email,
-                doctorProfile.Specialty,
-                doctorProfile.Clinic,
-                doctorProfile.LicenseNumber
-            });
+            Console.WriteLine($"Cache hit for {cacheKey}");
+            var cachedProfile = JsonSerializer.Deserialize<DoctorProfileDto>(cachedJson);
+            return Ok(cachedProfile);
         }
-        // Change patient notes
+        
+        Console.WriteLine($"Cache miss for {cacheKey}, fetching from database");
+        
+        // If not in cache, get from database
+        var doctorProfile = await _context.DoctorProfiles
+            .Include(d => d.User)
+            .FirstOrDefaultAsync(d => d.UserId == userId);
+
+        if (doctorProfile == null)
+            return NotFound("Doctor profile not found.");
+
+        // Create response DTO
+        var profileDto = new DoctorProfileDto
+        {
+            UserId = doctorProfile.UserId,
+            IdPublic = doctorProfile.User.IdPublic,
+            Name = doctorProfile.User.Name,
+            Email = doctorProfile.User.Email,
+            Specialty = doctorProfile.Specialty,
+            Clinic = doctorProfile.Clinic,
+            LicenseNumber = doctorProfile.LicenseNumber
+        };
+
+        // Store in cache with debug logging
+        var serializedData = JsonSerializer.Serialize(profileDto);
+        Console.WriteLine($"Caching data for {cacheKey}: {serializedData}");
+        await _cache.SetStringAsync(cacheKey, serializedData, _cacheOptions);
+        Console.WriteLine("Cache set completed");
+
+        return Ok(profileDto);
+    }
+    catch (Exception ex)
+    {
+        // Log the exception with details
+        Console.WriteLine($"Redis caching error: {ex.Message}");
+        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        
+        // Fallback to database
+        var doctorProfile = await _context.DoctorProfiles
+            .Include(d => d.User)
+            .FirstOrDefaultAsync(d => d.UserId == userId);
+
+        if (doctorProfile == null)
+            return NotFound("Doctor profile not found.");
+
+        return Ok(new DoctorProfileDto
+        {
+            UserId = doctorProfile.UserId,
+            IdPublic = doctorProfile.User.IdPublic,
+            Name = doctorProfile.User.Name,
+            Email = doctorProfile.User.Email,
+            Specialty = doctorProfile.Specialty,
+            Clinic = doctorProfile.Clinic,
+            LicenseNumber = doctorProfile.LicenseNumber
+        });
+    }
+}
         // PUT: api/DoctorProfile/appointments/{appointmentId}/notes
         [HttpPut("appointments/public/{appointmentPublicId}/notes")]
         public async Task<IActionResult> UpdateAppointmentNotes(string appointmentPublicId, [FromBody] string notes)
@@ -151,6 +209,16 @@ namespace Health_Informatics_System_Backend.Controllers
                 patientId,
                 notesHistory = pastNotes
             });
+        }
+            private class DoctorProfileDto
+        {
+            public int UserId { get; set; }
+            public string IdPublic { get; set; }
+            public string Name { get; set; }
+            public string Email { get; set; }
+            public string Specialty { get; set; }
+            public string Clinic { get; set; }
+            public string LicenseNumber { get; set; }
         }
     }
 }

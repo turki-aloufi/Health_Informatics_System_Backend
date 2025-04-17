@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Redis" Version="9.2.0" />
     <PackageReference Include="BCrypt.Net" Version="0.1.0" />
     <PackageReference Include="itext7" Version="9.1.0" />
     <PackageReference Include="itext7.bouncy-castle-adapter" Version="9.1.0" />
@@ -18,6 +19,9 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.3.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.2" />
+    <PackageReference Include="StackExchange.Redis" Version="2.8.31" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 

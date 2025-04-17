@@ -61,6 +61,13 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Redis for class task
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis"); 
+    options.InstanceName = "HealthInfSys_"; 
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
