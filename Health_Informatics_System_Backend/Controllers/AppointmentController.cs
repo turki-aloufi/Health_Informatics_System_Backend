@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using Microsoft.Extensions.Caching.Memory;
 
 
 namespace Health_Informatics_System_Backend.Controllers
@@ -19,11 +20,14 @@ namespace Health_Informatics_System_Backend.Controllers
     {
         private readonly AppDbContext _context;
         private readonly AppointmentService _appointmentService;
+        private readonly IMemoryCache _cache;
 
-        public AppointmentsController(AppDbContext context, AppointmentService appointmentService)
+
+        public AppointmentsController(AppDbContext context, AppointmentService appointmentService, IMemoryCache cache)
         {
             _context = context;
             _appointmentService = appointmentService;
+            _cache = cache;
         }
 
         // GET: api/Appointments/me
@@ -37,22 +41,31 @@ namespace Health_Informatics_System_Backend.Controllers
             int userId = int.Parse(userIdClaim);
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (role == "Patient")
+            if (role != "Patient" && role != "Doctor")
+                return Forbid();
+
+            // Unique cache key
+            string cacheKey = $"appointments_{role}_{userId}";
+
+            // Try to get cached appointments
+            if (!_cache.TryGetValue(cacheKey, out List<Appointment> appointments))
             {
-                var appointments = await _context.Appointments
-                    .Where(a => a.PatientId == userId)
-                    .ToListAsync();
-                return Ok(new { msg = "appointments", data = appointments });
+                // Not found in cache, query from DB
+                appointments = role == "Patient"
+                    ? await _context.Appointments.Where(a => a.PatientId == userId).ToListAsync()
+                    : await _context.Appointments.Where(a => a.DoctorId == userId).ToListAsync();
+
+                // Set cache options
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(5)); // adjust as needed
+
+                // Store in cache
+                _cache.Set(cacheKey, appointments, cacheOptions);
             }
-            else if (role == "Doctor")
-            {
-                var appointments = await _context.Appointments
-                    .Where(a => a.DoctorId == userId)
-                    .ToListAsync();
-                return Ok(new { msg = "appointments", data = appointments });
-            }
-            return Forbid();
+
+            return Ok(new { msg = "appointments", data = appointments });
         }
+
 
         // POST: api/Appointments
         [HttpPost]
