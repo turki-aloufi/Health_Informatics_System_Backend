@@ -71,11 +71,11 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    DbInitializer.Seed(dbContext);
-}
+// using (var scope = app.Services.CreateScope())
+// {
+//     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+//     DbInitializer.Seed(dbContext);
+// }
 
 
 // Configure the HTTP request pipeline.

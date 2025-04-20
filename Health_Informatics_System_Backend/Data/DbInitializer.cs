@@ -7,7 +7,7 @@ namespace Health_Informatics_System_Backend.Data
     {
         public static void Seed(AppDbContext context)
         {
-            context.Database.Migrate();
+            // context.Database.Migrate();
 
             if (context.Users.Any()) return; // Skip seeding if there are already users
 
